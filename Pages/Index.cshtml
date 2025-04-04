@@ -1,0 +1,52 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Password Reset Portal";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Password Reset</title>
+    <script src="/js/tailwind.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white shadow-xl rounded-xl p-10 max-w-md w-full space-y-6">
+            <h1 class="text-2xl font-bold text-center">Reset Your Password</h1>
+
+            <form method="post" class="space-y-4">
+                <div>
+                    <label class="block mb-1 font-medium">Username</label>
+                    <input name="Username" required class="w-full border rounded p-2 focus:outline-none focus:ring focus:border-blue-300" />
+                </div>
+
+                <div>
+                    <label class="block mb-1 font-medium">Current Password</label>
+                    <input type="password" name="OldPassword" required class="w-full border rounded p-2 focus:outline-none focus:ring focus:border-blue-300" />
+                </div>
+
+                <div>
+                    <label class="block mb-1 font-medium">New Password</label>
+                    <input type="password" name="NewPassword" required class="w-full border rounded p-2 focus:outline-none focus:ring focus:border-blue-300" />
+                </div>
+
+                <div>
+                    <label class="block mb-1 font-medium">Confirm New Password</label>
+                    <input type="password" name="ConfirmPassword" required class="w-full border rounded p-2 focus:outline-none focus:ring focus:border-blue-300" />
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+                    Change Password
+                </button>
+            </form>
+
+            @if (Model.Message != null)
+            {
+                <div class="text-center text-sm mt-4 font-medium text-red-600">@Model.Message</div>
+            }
+        </div>
+    </div>
+</body>
+</html>
