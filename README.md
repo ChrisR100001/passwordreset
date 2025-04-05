@@ -8,6 +8,7 @@ This web application allows employees to safely reset their account passwords th
 
 Key features include:
 - Integration-ready with Active Directory or LDAP
+- Only runs on Windows operating system
 
 ## 🛠 Tech Stack
 
@@ -37,9 +38,11 @@ Key features include:
 2. Place the published output in `D:\WWWROOT\server.exampledomain.co.uk\site`.
 3. Configure a **binding** in IIS with an SSL certificate issued for `server.exampledomain.co.uk`.
 4. The `web.config` file should point to the DLL:
-   ```xml
-   <aspNetCore processPath="dotnet" arguments=".\PasswordResetPortal.dll" hostingModel="inprocess" />
-   ```
+
+    <aspNetCore processPath="dotnet" arguments=".\PasswordResetPortal.dll" hostingModel="inprocess" />
+
+5. With an elevated command prompt, run the PasswordResetPortal.exe binary - this will register the PasswordResetPortal event log source on Windows platform.
+
 ### Troubleshooting
 
     500.19 Error: Likely caused by malformed web.config or missing .NET Hosting Bundle.
@@ -54,26 +57,25 @@ will be using this app.  Although an administrator account can be used it is bet
 that only has the change password delegated privileges granted.
 
 The service account credentials need to be stored in the appsettings.json file.  For security, the password is encrypted.
-<pre> ```
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
+
+    {
+      "Logging": {
+        "LogLevel": {
+        "Default": "Information",
+        "Microsoft.AspNetCore": "Warning"
     }
-  },
-  "AllowedHosts": "*",
+    },
+    "AllowedHosts": "*",
 
-  "ServiceAccount": {
-    "UserUpn": "svc_account@exampledomain.co.uk",
-    "UserPassword": "1xQHCci5YpolO3La3YQ9/+D3Wlwtaf8l8FkoXPn9ayg="
-  },
-  "Domain": "exampledomain.co.uk",
-  "DomainController": "dchost.exampledomain.co.uk",
-  "DomainLdapBase": "DC=exampledomain,DC=co,DC=uk"
+    "ServiceAccount": {
+      "UserUpn": "svc_account@exampledomain.co.uk",
+      "UserPassword": "1xQHCci5YpolO3La3YQ9/+D3Wlwtaf8l8FkoXPn9ayg="
+    },
+    "Domain": "exampledomain.co.uk",
+    "DomainController": "dchost.exampledomain.co.uk",
+    "DomainLdapBase": "DC=exampledomain,DC=co,DC=uk"
+    }
 
-}
-``` </pre>
 
 Set the name of the service account you have created in the UserUpn field and use the app to encrypt the password for this account 
 using /encryptpass page.  This page accepts a password in plain text and will generate the enrypted value that you can store in the appsettings.json file
@@ -86,40 +88,40 @@ the request has to be generated from Windows, requests generated through other m
 
 1) Create a request.inf text file
 
-;----------------- request.inf -----------------
-[Version]
+        ;----------------- request.inf -----------------
+        [Version]
 
-Signature="$Windows NT$
+        Signature="$Windows NT$
 
-[NewRequest]
+        [NewRequest]
 
-Subject = "CN=host.exampledomain.co.uk" ; replace with the FQDN of the DC
-KeySpec = 1
-KeyLength = 2048
-HashAlgorithm = sha256
-; Can be 1024, 2048, 4096, 8192, or 16384.
-; Larger key sizes are more secure, but have
-; a greater impact on performance.
-Exportable = TRUE
-MachineKeySet = TRUE
-SMIME = False
-PrivateKeyArchive = FALSE
-UserProtected = FALSE
-UseExistingKeySet = FALSE
-ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
-ProviderType = 12
-RequestType = PKCS10
-KeyUsage = 0xa0
+        Subject = "CN=host.exampledomain.co.uk" ; replace with the FQDN of the DC
+        KeySpec = 1
+        KeyLength = 2048
+        HashAlgorithm = sha256
+        ; Can be 1024, 2048, 4096, 8192, or 16384.
+        ; Larger key sizes are more secure, but have
+        ; a greater impact on performance.
+        Exportable = TRUE
+        MachineKeySet = TRUE
+        SMIME = False
+        PrivateKeyArchive = FALSE
+        UserProtected = FALSE
+        UseExistingKeySet = FALSE
+        ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
+        ProviderType = 12
+        RequestType = PKCS10
+        KeyUsage = 0xa0
 
-[EnhancedKeyUsageExtension]
+        [EnhancedKeyUsageExtension]
 
-OID=1.3.6.1.5.5.7.3.1 ; this is for Server Authentication
+        OID=1.3.6.1.5.5.7.3.1 ; this is for Server Authentication
 
-;-----------------------------------------------
+        ;-----------------------------------------------
 
 2) From an elevated prompt run
 
-certreq -new request.inf request.req
+    certreq -new request.inf request.req
 
 This will generate  a CSR file called request.req
 
@@ -128,15 +130,15 @@ store. Place the resulting certificate in a text file in same folder as the req 
 
 4) Run
 
-certreq -accept filename.crt
+    certreq -accept filename.crt
 
-C:\Users\user>certreq -accept host.exampledomain.co.uk.crt
-Installed Certificate:
-  Serial Number: 77
-  Subject: CN=host.exampledomain.co.uk
-  NotBefore: 04/04/2025 12:51
-  NotAfter: 04/04/2026 12:51
-  Thumbprint: bda7974788f39577e724ecbd00fb844d6bedf721
+    C:\Users\user>certreq -accept host.exampledomain.co.uk.crt
+    Installed Certificate:
+      Serial Number: 77
+      Subject: CN=host.exampledomain.co.uk
+      NotBefore: 04/04/2025 12:51
+      NotAfter: 04/04/2026 12:51
+      Thumbprint: bda7974788f39577e724ecbd00fb844d6bedf721
 
   At this point the certificate (and it's private key will be installed in the Local machine Personal keystore). This is all that is required.
 

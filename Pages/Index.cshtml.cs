@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PasswordResetPortal;
 using System;
+using System.Diagnostics;
 using System.DirectoryServices;
 using System.DirectoryServices.Protocols;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 
 public class IndexModel : PageModel
@@ -47,6 +49,9 @@ public class IndexModel : PageModel
             string userDn = GetUserDistinguishedName(domainController, ldapBase, samAccountName);
             if (userDn == null)
             {
+                if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    EventLog.WriteEntry("PasswordResetPortal", $"Received invalid username {Username}", EventLogEntryType.Information);
+
                 Message = "❌ Current password is incorrect or invalid user name.";
                 return;
             }
@@ -54,12 +59,19 @@ public class IndexModel : PageModel
             bool passwordChangeRequired;
             if (!ValidateUserCredentials(domainController, userDn, OldPassword, out passwordChangeRequired))
             {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    EventLog.WriteEntry("PasswordResetPortal", $"Received invalid password for username {Username}", EventLogEntryType.Information);
+
                 Message = "❌ Current password is incorrect or invalid user name.";
                 return;
             }
 
             // Step 2: Change password using service account
             string result = ChangeUserPasswordAsService(domainController, serviceUser, servicePassword, userDn, NewPassword);
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                EventLog.WriteEntry("PasswordResetPortal", $"Changed password for username {Username}", EventLogEntryType.Information);
+
             Message = result;
 
         }
@@ -167,16 +179,19 @@ public class IndexModel : PageModel
 
     private string GetUserDistinguishedName(string domainController, string ldapBase, string username)
     {
-        var entry = new DirectoryEntry($"LDAP://{domainController}/{ldapBase}");
-        var searcher = new DirectorySearcher(entry)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))  //This only works on Windows
         {
-            Filter = $"(sAMAccountName={username})"
-        };
-        searcher.PropertiesToLoad.Add("distinguishedName");
-        var result = searcher.FindOne();
-        if (result != null)
-        {
-            return result.Properties["distinguishedName"][0]?.ToString(); // ✅ This is what LDAP expects
+            var entry = new DirectoryEntry($"LDAP://{domainController}/{ldapBase}");
+            var searcher = new DirectorySearcher(entry)
+            {
+                Filter = $"(sAMAccountName={username})"
+            };
+            searcher.PropertiesToLoad.Add("distinguishedName");
+            var result = searcher.FindOne();
+            if (result != null)
+            {
+                return result.Properties["distinguishedName"][0]?.ToString(); // ✅ This is what LDAP expects
+            }
         }
         return null;
     }

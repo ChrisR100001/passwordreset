@@ -1,72 +1,10 @@
-﻿using System;
-using System.Text;
-using static System.String;
+﻿using System.Text;
 using System.Security.Cryptography;
-using System.IO;
 
 namespace PasswordResetPortal
 {
     public static class SecurityHelper
     {
-        /// <summary>
-        /// Create a composite of the email address and password so that the password text can't be copied to a different user account.  Two keys in use - one retrieved from Azure KeyVault and other stored with application
-        /// use of two keys means attacker needs to have access to both in order to decrypt passwords.  Both keys must be present.
-        /// </summary>
-        /// <param name="eMail"></param>
-        /// <param name="password"></param>
-        /// <param name="key1"></param>
-        /// <param name="key2"></param>
-        /// <returns></returns>
-        public static string CreatePasswordPackage(string eMail, string password, string key1, string key2)
-        {
-            var key = CreateKeyFromFactors(key1, key2);
-            var emailEnc = Convert.ToBase64String(Encoding.ASCII.GetBytes(eMail));
-            var passEnc = Convert.ToBase64String(Encoding.ASCII.GetBytes(password));
-            return Encrypt(Format("{0},{1}", emailEnc, passEnc), key);
-        }
-
-        /// <summary>
-        /// Allow a logon process to validate whether a password supplied by the user matches the one held within the system
-        /// </summary>
-        /// <param name="eMail"></param>
-        /// <param name="password"></param>
-        /// <param name="passwordPackage"></param>
-        /// <param name="key1"></param>
-        /// <param name="key2"></param>
-        /// <returns></returns>
-        public static bool TestPasswordPackage(string eMail, string password, string passwordPackage, string key1, string key2)
-        {
-            var u = Decrypt(passwordPackage, CreateKeyFromFactors(key1,key2)).Split(',');
-
-            if (Encoding.ASCII.GetString(Convert.FromBase64String(u[0])) == eMail && Encoding.ASCII.GetString(Convert.FromBase64String(u[1])) == password)
-                return true;
-            else
-                return false;
-        }
-
-        /// <summary>
-        /// Join two strings together in a deterministic way such that if resulting text is derived in a complex fashion
-        /// </summary>
-        /// <param name="key1"></param>
-        /// <param name="key2"></param>
-        /// <returns></returns>
-        public static string CreateKeyFromFactors(string key1, string key2)
-        {
-            var inbuilt = new byte[] { 72, 23, 89, 13, 87, 102, 08, 20 };
-            var hasher = MD5.Create();
-            var input = Encoding.ASCII.GetBytes(key1 + key2);
-            var combined = new byte[inbuilt.Length + input.Length];
-            
-            //Merge the two arrays together
-            Buffer.BlockCopy(inbuilt, 0, combined, 0, inbuilt.Length);
-            Buffer.BlockCopy(input, 0, combined, inbuilt.Length, input.Length);
-
-            //And create a hash of all three which will become the key that is used
-            var hash = hasher.ComputeHash(combined);
-
-            return Encoding.ASCII.GetString(hash);
-        }
-
         /// <summary>
         /// Encrypt a piece of text using key supplied.  Use randomly generated initialization vector to prevent identical plain texts from having identical output
         /// </summary>

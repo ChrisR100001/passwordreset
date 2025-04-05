@@ -1,4 +1,14 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 var builder = WebApplication.CreateBuilder(args);
+
+//Create our event source in the event log
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+    if (!EventLog.SourceExists("PasswordResetPortal"))
+        EventLog.CreateEventSource("PasswordResetPortal", "PasswordResetPortal");
+}
 
 // Add services to the container.
 builder.Services.AddRazorPages();
